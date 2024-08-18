@@ -4,6 +4,7 @@ import datetime as dt
 import numpy as np
 from PIL import Image
 import os
+import matplotlib.pyplot as plt
 
 # ワイドモードに設定
 st.set_page_config(layout="wide")
@@ -13,12 +14,20 @@ subject_name = '生命保険計理'
 st.title(subject_name)
 st.text('このページは、生保講座過去問の解説を記載するページです')
 
-# ディレクトリの作成（必要なら）
-if not os.path.exists(f'./answers/{subject_name}'):
-    os.makedirs(f'./answers/{subject_name}')
+code = st.text_input('社員番号を入力してください')
+code_button = st.button('社員番号確定')
+
+if code_button:
+    # ディレクトリの作成（必要なら）
+    if not os.path.exists(f'./answers/{code}'):
+        os.makedirs(f'./answers/{code}')
+    if not os.path.exists(f'./answers/{code}/{subject_name}'):
+        os.makedirs(f'./answers/{code}/{subject_name}')
 
 # 年度選択のプルダウンメニュー
-subjects_list = ['2023_A', '2023_B', '2023_C']
+subjects_list = ['2023_A', '2023_B', '2023_C', 
+                 '2022_A', '2022_B', '2022_C', 
+                 '2021_A', '2021_B', '2021_C']
 subject = st.selectbox('年度を選んでください', subjects_list)
 
 # CSVファイルの読み込み
@@ -26,11 +35,22 @@ exam_files = {
     '2023_A': '2023_A.csv',
     '2023_B': '2023_B.csv',
     '2023_C': '2023_C.csv',
+    '2022_A': '2022_A.csv',
+    '2022_B': '2022_B.csv',
+    '2022_C': '2022_C.csv',
+    '2021_A': '2021_A.csv',
+    '2021_B': '2021_B.csv',
+    '2021_C': '2021_C.csv',
     # 他の年度のデータもここに追加できます
 }
 
 file_path = f'./Problems/{subject_name}/' + exam_files[subject]
 df = pd.read_csv(file_path, encoding='shift-jis')
+
+image_path = f"./Problems/{subject_name}/{subject}/page_{2}.png"
+if os.path.exists(image_path):
+        image = Image.open(image_path)
+        st.image(image)
 
 # 問題範囲を各ページに割り当てる
 page_to_questions = {
@@ -105,13 +125,30 @@ if result_button:
     st.text(f'正答率 {correct_ratio} %')
     st.table(saiten[['解答', 'あなたの解答', '正誤']])
 
-    if not os.path.exists(f'./answers/{subject_name}/{exam_files[subject] + "_your_answer"}.csv'):
-        st.write('回答が保存されました！')
-        user_answers_df.to_csv(f'./answers/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
+    correct_ratio_df = pd.DataFrame([[today, int(correct_ratio)]], columns=['受験日', '正答率'])
+
+    if not os.path.exists(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv'):
+        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
     else:
-        answers_df = pd.read_csv(f'./answers/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift_jis')
+        ratio_df = pd.read_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift_jis')
+        correct_ratio_df = pd.concat([correct_ratio_df, ratio_df], axis=0, ignore_index=True)
+        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
+
+    if not os.path.exists(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv'):
+        st.write('回答が保存されました！')
+        user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
+    else:
+        answers_df = pd.read_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift_jis')
         user_answers_df = pd.concat([answers_df, user_answers_df], axis=1)
         st.write('回答が保存されました！')
-        user_answers_df.to_csv(f'./answers/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
+        user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
 
+    st.text('過去の解答')
     st.table(user_answers_df)
+    st.text('正答率の推移')
+    st.table(correct_ratio_df)
+
+    plt.figure()
+    plt.xticks(rotation=90)
+    plt.scatter(correct_ratio_df['受験日'], correct_ratio_df['正答率'])
+    st.pyplot(plt, use_container_width=True)

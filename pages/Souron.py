@@ -13,12 +13,17 @@ subject_name = '生命保険総論'
 st.title(subject_name)
 st.text('このページは、生保講座過去問の解説を記載するページです')
 
+code = st.text_input('社員番号を入力してください')
 # ディレクトリの作成（必要なら）
-if not os.path.exists(f'./answers/{subject_name}'):
-    os.makedirs(f'./answers/{subject_name}')
+if not os.path.exists(f'./answers/{code}'):
+    os.makedirs(f'./answers/{code}')
+if not os.path.exists(f'./answers/{code}/{subject_name}'):
+    os.makedirs(f'./answers/{code}/{subject_name}')
 
 # 年度選択のプルダウンメニュー
-subjects_list = ['2023_A', '2023_B', '2023_C']
+subjects_list = ['2023_A', '2023_B', '2023_C', 
+                 '2022_A', '2022_B', '2022_C', 
+                 '2021_A', '2021_B', '2021_C']
 subject = st.selectbox('年度を選んでください', subjects_list)
 
 # CSVファイルの読み込み
@@ -26,6 +31,12 @@ exam_files = {
     '2023_A': '2023_A.csv',
     '2023_B': '2023_B.csv',
     '2023_C': '2023_C.csv',
+    '2022_A': '2022_A.csv',
+    '2022_B': '2022_B.csv',
+    '2022_C': '2022_C.csv',
+    '2021_A': '2021_A.csv',
+    '2021_B': '2021_B.csv',
+    '2021_C': '2021_C.csv',
     # 他の年度のデータもここに追加できます
 }
 
@@ -105,13 +116,23 @@ if result_button:
     st.text(f'正答率 {correct_ratio} %')
     st.table(saiten[['解答', 'あなたの解答', '正誤']])
 
-    if not os.path.exists(f'./answers/{subject_name}/{exam_files[subject] + "_your_answer"}.csv'):
-        st.write('回答が保存されました！')
-        user_answers_df.to_csv(f'./answers/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
+    correct_ratio_df = pd.DataFrame([[today, int(correct_ratio)]], columns=['受験日', '正答率'])
+
+    if not os.path.exists(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv'):
+        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
     else:
-        answers_df = pd.read_csv(f'./answers/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift_jis')
+        ratio_df = pd.read_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift_jis')
+        correct_ratio_df = pd.concat([correct_ratio_df, ratio_df], axis=0, ignore_index=True)
+        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
+
+    if not os.path.exists(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv'):
+        st.write('回答が保存されました！')
+        user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
+    else:
+        answers_df = pd.read_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift_jis')
         user_answers_df = pd.concat([answers_df, user_answers_df], axis=1)
         st.write('回答が保存されました！')
-        user_answers_df.to_csv(f'./answers/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
+        user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
 
     st.table(user_answers_df)
+    st.table(correct_ratio_df)
