@@ -68,7 +68,7 @@ page_to_questions = {
     18: range(49, 51),
 }
 
-today = dt.datetime.now()
+today = now = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 user_answers = []
 
 for page, questions in page_to_questions.items():
@@ -120,23 +120,23 @@ if result_button:
     st.text(f'正答率 {correct_ratio} %')
     st.table(saiten[['解答', 'あなたの解答', '正誤']])
 
-    correct_ratio_df = pd.DataFrame([[today, int(correct_ratio)]], columns=['受験日', '正答率'])
+    correct_ratio_df = pd.DataFrame([[str(today)[:19], int(correct_ratio)]], columns=['受験日', '正答率'])
 
-    if not os.path.exists(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv'):
-        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
+    if not os.path.exists(f'./answers/{code}/{subject_name}/{subject + "_correct_ratio"}.csv'):
+        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{subject + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
     else:
-        ratio_df = pd.read_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift_jis')
-        correct_ratio_df = pd.concat([correct_ratio_df, ratio_df], axis=0, ignore_index=True)
-        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
+        ratio_df = pd.read_csv(f'./answers/{code}/{subject_name}/{subject + "_correct_ratio"}.csv', encoding='shift_jis')
+        correct_ratio_df = pd.concat([ratio_df, correct_ratio_df], axis=0, ignore_index=True)
+        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{subject + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
 
-    if not os.path.exists(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv'):
+    if not os.path.exists(f'./answers/{code}/{subject_name}/{subject + "_your_answer"}.csv'):
         st.write('回答が保存されました！')
-        user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
+        user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{subject + "_your_answer"}.csv', encoding='shift-jis', index=False)
     else:
-        answers_df = pd.read_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift_jis')
+        answers_df = pd.read_csv(f'./answers/{code}/{subject_name}/{subject + "_your_answer"}.csv', encoding='shift_jis')
         user_answers_df = pd.concat([answers_df, user_answers_df], axis=1)
         st.write('回答が保存されました！')
-        user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
+        user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{subject + "_your_answer"}.csv', encoding='shift-jis', index=False)
 
     st.text('過去の解答')
     st.table(user_answers_df)
@@ -146,4 +146,5 @@ if result_button:
     plt.figure()
     plt.xticks(rotation=90)
     plt.scatter(correct_ratio_df['受験日'], correct_ratio_df['正答率'])
+    plt.plot(correct_ratio_df['受験日'], correct_ratio_df['正答率'])
     st.pyplot(plt, use_container_width=True)
