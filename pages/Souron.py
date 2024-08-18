@@ -3,6 +3,7 @@ import pandas as pd
 import datetime as dt
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 import os
 
 # ワイドモードに設定
@@ -14,11 +15,14 @@ st.title(subject_name)
 st.text('このページは、生保講座過去問の解説を記載するページです')
 
 code = st.text_input('社員番号を入力してください')
-# ディレクトリの作成（必要なら）
-if not os.path.exists(f'./answers/{code}'):
-    os.makedirs(f'./answers/{code}')
-if not os.path.exists(f'./answers/{code}/{subject_name}'):
-    os.makedirs(f'./answers/{code}/{subject_name}')
+code_button = st.button('社員番号確定')
+
+if code_button:
+    # ディレクトリの作成（必要なら）
+    if not os.path.exists(f'./answers/{code}'):
+        os.makedirs(f'./answers/{code}')
+    if not os.path.exists(f'./answers/{code}/{subject_name}'):
+        os.makedirs(f'./answers/{code}/{subject_name}')
 
 # 年度選択のプルダウンメニュー
 subjects_list = ['2023_A', '2023_B', '2023_C', 
@@ -134,5 +138,12 @@ if result_button:
         st.write('回答が保存されました！')
         user_answers_df.to_csv(f'./answers/{code}/{subject_name}/{exam_files[subject] + "_your_answer"}.csv', encoding='shift-jis', index=False)
 
+    st.text('過去の解答')
     st.table(user_answers_df)
+    st.text('正答率の推移')
     st.table(correct_ratio_df)
+
+    plt.figure()
+    plt.xticks(rotation=90)
+    plt.scatter(correct_ratio_df['受験日'], correct_ratio_df['正答率'])
+    st.pyplot(plt, use_container_width=True)
