@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import os
 
 # ワイドモードに設定
-st.set_page_config(layout="wide")
+#st.set_page_config(layout="wide")
 
 # タイトルと説明
 subject_name = '生命保険総論'
