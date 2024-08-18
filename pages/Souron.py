@@ -43,14 +43,14 @@ page_to_questions = {
     8: range(25, 27),
     9: range(27, 29),
     10: range(29, 31),
-    11: range(31, 35),
-    12: range(35, 39),
-    13: range(39, 42),
-    14: range(42, 44),
-    15: range(44, 46),
-    16: range(46, 48),
-    17: range(48, 50),
-    18: range(50, 51),
+    11: range(31, 34),
+    12: range(34, 38),
+    13: range(38, 41),
+    14: range(41, 43),
+    15: range(43, 45),
+    16: range(45, 47),
+    17: range(47, 49),
+    18: range(49, 51),
 }
 
 today = dt.datetime.now()
