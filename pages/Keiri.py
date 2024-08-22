@@ -5,6 +5,8 @@ import numpy as np
 from PIL import Image
 import os
 import matplotlib.pyplot as plt
+import re
+from sympy import sympify, preview
 
 # ワイドモードに設定
 #st.set_page_config(layout="wide")
@@ -104,6 +106,36 @@ for page, questions in page_to_questions.items():
 # 答え合わせボタンをページの一番下に配置
 result_button = st.button('答え合わせ')
 
+def preprocess_tex(tex):
+    # '^' を '**' に変換
+    tex = tex.replace('^', '**')
+    
+    # 数字と変数の間に掛け算を挿入
+    tex = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', tex)
+    
+    return tex
+
+def render_markdown_with_tex(text):
+    """
+    テキスト内のTeX形式の数式を処理し、SymPyで表示可能な形にする。
+    """
+    segments = re.split(r'(\$[^\$]+\$)', text)  # '$'で囲まれた部分を分割
+    for segment in segments:
+        if segment.startswith('$') and segment.endswith('$'):
+            # TeX部分を処理する
+            tex = segment.strip('$')
+            try:
+                # 前処理を行う
+                tex = preprocess_tex(tex)
+                expr = sympify(tex)
+                st.latex(sp.latex(expr))  # 数式をTeX形式で表示
+            except Exception as e:
+                st.write(segment)  # 解析に失敗した場合はそのまま表示
+        else:
+            # 通常のテキスト部分を表示する
+            st.write(segment)
+
+
 # 「答え合わせ」ボタンの処理
 if result_button:
     for i in range(len(user_answers)):
@@ -112,27 +144,27 @@ if result_button:
 
         # 解説を横長に表示
         with st.expander(f"解説: 問{i+1}", expanded=False):
-            st.markdown(f'<div style="width:100%;">{df.loc[i, "解説"]}</div>', unsafe_allow_html=True)
+            render_markdown_with_tex(df.loc[i, "解説"])  # 解説をレンダリングする
     
-    # ユーザーの回答を保存
+    # ユーザーの回答を保存（この部分は元のコードのまま）
     user_answers_df = pd.DataFrame(user_answers, columns=[str(today)[:19]])
-    saiten = pd.concat([user_answers_df, df['解答']], axis=1)
+    saiten = pd.concat([user_answers_df, df[['解答', '点数']]], axis=1)
     saiten = saiten.rename(columns={str(today)[:19]:'あなたの解答'})
     saiten['正誤ラベル'] = np.where(saiten['解答']==saiten['あなたの解答'], 1, 0)
     saiten['正誤'] = np.where(saiten['解答']==saiten['あなたの解答'], 'o', 'x')
 
-    correct_ratio = saiten[saiten['正誤']=='o']['正誤'].count()/saiten['正誤'].count() * 100
-    st.text(f'正答率 {correct_ratio} %')
+    score = saiten[saiten['正誤']=='o']['点数'].sum()
+    st.text(f'得点 {score} 点')
     st.table(saiten[['解答', 'あなたの解答', '正誤']])
 
-    correct_ratio_df = pd.DataFrame([[str(today)[:19], int(correct_ratio)]], columns=['受験日', '正答率'])
+    score_df = pd.DataFrame([[str(today)[:19], int(score)]], columns=['受験日', '正答率'])
 
-    if not os.path.exists(f'./answers/{code}/{subject_name}/{subject + "_correct_ratio"}.csv'):
-        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{subject + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
+    if not os.path.exists(f'./answers/{code}/{subject_name}/{subject + "_score"}.csv'):
+        score_df.to_csv(f'./answers/{code}/{subject_name}/{subject + "_score"}.csv', encoding='shift-jis', index=False)
     else:
-        ratio_df = pd.read_csv(f'./answers/{code}/{subject_name}/{subject + "_correct_ratio"}.csv', encoding='shift_jis')
-        correct_ratio_df = pd.concat([ratio_df, correct_ratio_df], axis=0, ignore_index=True)
-        correct_ratio_df.to_csv(f'./answers/{code}/{subject_name}/{subject + "_correct_ratio"}.csv', encoding='shift-jis', index=False)
+        ratio_df = pd.read_csv(f'./answers/{code}/{subject_name}/{subject + "_score"}.csv', encoding='shift_jis')
+        score_df = pd.concat([ratio_df, score_df], axis=0, ignore_index=True)
+        score_df.to_csv(f'./answers/{code}/{subject_name}/{subject + "_score"}.csv', encoding='shift-jis', index=False)
 
     if not os.path.exists(f'./answers/{code}/{subject_name}/{subject + "_your_answer"}.csv'):
         st.write('回答が保存されました！')
@@ -146,10 +178,10 @@ if result_button:
     st.text('過去の解答')
     st.table(user_answers_df)
     st.text('正答率の推移')
-    st.table(correct_ratio_df)
+    st.table(score_df)
 
     plt.figure()
     plt.xticks(rotation=90)
-    plt.scatter(correct_ratio_df['受験日'], correct_ratio_df['正答率'])
-    plt.plot(correct_ratio_df['受験日'], correct_ratio_df['正答率'])
+    plt.scatter(score_df['受験日'], score_df['正答率'])
+    plt.plot(score_df['受験日'], score_df['正答率'])
     st.pyplot(plt, use_container_width=True)
